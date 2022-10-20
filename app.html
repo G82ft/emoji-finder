@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <style>
+            .grid-container {
+                display: grid;
+                grid-template-columns: auto auto auto auto;
+            }
+        </style>
+        <title>Emoji</title>
+    </head>
+    <body>
+        <div style="text-align: center">
+            <label for="request">Search</label>
+            <br>
+            <input id="request" type="search" placeholder="Enter title" onkeydown="search();">
+            <button type="submit" name="submitButton" onclick="search();">Search</button>
+            <br>
+            <input id="isTitle" type="checkbox" checked="checked" onclick="switchCb(this);">
+            <label for="isTitle">Search by title</label>
+        </div>
+        <div id="searchResults" class="grid-container"></div>
+        <script>
+            fetch('https://emoji-api-app.herokuapp.com/')
+                .then((response) => {
+                    return response.json();
+                })
+                .then((data) => {
+                    render(data);
+                });
+
+            function search() {
+                fetch('https://emoji-api-app.herokuapp.com/')
+                    .then((response) => {
+                        return response.json();
+                    })
+                    .then((data) => {
+                        data = deleteRepeatedKeywords(data);
+                        let request = document.getElementById("request").value;
+
+                        if (document.getElementById("isTitle").checked) {
+                            render(findByName(request, data));
+                        } else {
+                            render(findByDescription(request, data));
+                        }
+                    });
+            }
+
+            function render(data) {
+                document.getElementById("searchResults").remove();
+                let searchResults = document.createElement('div');
+                searchResults.id = "searchResults";
+                searchResults.className = "grid-container";
+                document.body.append(searchResults)
+
+                for (let i = 0; i < data.length; i++) {
+                    searchResults.append(getBody(data[i]));
+                }
+            }
+
+            function getBody(obj) {
+                let title = obj.title;
+                let symbol = obj.symbol;
+                let keywords = obj.keywords;
+
+                let div = document.createElement('div');
+                div.className = 'grid-item'
+
+                let symbolE = document.createElement('h1');
+                symbolE.style = "text-align: center;";
+                symbolE.textContent = symbol;
+
+                let titleE = document.createElement('p');
+                titleE.style = "text-align: center;";
+                titleE.textContent = title;
+
+                let description = document.createElement('p');
+                description.style = "text-align: center;";
+                description.textContent = keywords;
+
+                div.append(symbolE, titleE, description);
+
+                return div;
+            }
+
+            function switchCb(sender) {
+                let entry = window.document.getElementById("request");
+                if (sender.checked) {
+                    entry.placeholder = 'Enter title';
+                } else {
+                    entry.placeholder = 'Enter description';
+                }
+            }
+
+            function findByName(title, data) {
+                return data.filter(obj => obj.title.toLowerCase().includes(title.toLowerCase()));
+            }
+
+            function findByDescription(description, data) {
+                return data.filter(obj => obj.keywords.toLowerCase().includes(description.toLowerCase()))
+            }
+
+            function deleteRepeatedKeywords(data) {
+                return data.map(
+                    obj => {
+                        let keywords = '';
+                        let words = obj.keywords.split(' ');
+                        for (let i = 0; i < words.length; i++) {
+                            if (!keywords.includes(words[i])) {
+                                keywords += words[i];
+                                if (i < words.length - 2) {
+                                    keywords += ' ';
+                                }
+                            }
+                        }
+                        obj.keywords = keywords;
+                        return obj;
+                    }
+                )
+            }
+        </script>
+    </body>
+</html>
